@@ -13,10 +13,19 @@
   #define debugln(x)
 #endif
 
-const char* ssid = "xxx";
-const char* password = "xxx";
+const char* ssid = "xxxx";
+const char* password = "xxxxx";
+IPAddress ip(192, 168, 1, xx);
+IPAddress gateway(192, 168, 1, 1);
+IPAddress subnet(255, 255, 255, 0);
+IPAddress dns(192, 168, 1, xx);
+
 const char* dom_interval = "http://192.168.1.xx:xxxx/json.htm?type=command&param=getuservariable&idx=1";
 const char* dom_device = "http://192.168.1.xx:xxxx/json.htm?type=devices&rid=149";
+const char* dom_volt = "http://192.168.1.xx:xxxx/json.htm?type=command&param=udevice&idx=150&nvalue=0&svalue=3.3";
+
+#define Motor 14
+#define Motor_time 1000
 
 StaticJsonBuffer<2200> jsonBuffer;
 int httpCode;
@@ -26,15 +35,12 @@ String dev_status;
 
 byte sleepCount = 0;
 
-
 void setup() {
-  // initialize digital pin LED_BUILTIN as an output.
-  pinMode(LED_BUILTIN, OUTPUT);
-
   Serial.begin(115200);
   debug("Connecting to ");
   debugln(ssid);
- 
+
+  WiFi.config(ip, dns, gateway, subnet); //remove if DHCP is needed
   WiFi.begin(ssid, password);
  
   while (WiFi.status() != WL_CONNECTED) {
@@ -46,6 +52,7 @@ void setup() {
   debugln("WiFi connected"); 
   debugln("IP address: ");
   debugln(WiFi.localIP());
+  pinMode(Motor, OUTPUT);
 
   debugln("I'm awake and getting Domoticz data about Airwick");
 
@@ -58,6 +65,8 @@ void setup() {
 
   if( (sleepCount >= interval) && (dev_status == "On")){
     debugln("Airwick papurskimas!!");
+    digitalWrite(Motor, HIGH); 
+    delay(Motor_time); 
     sleepCount = 0;
   }
   if( (sleepCount >= interval) && (dev_status == "Off")){
@@ -65,8 +74,8 @@ void setup() {
   }
   EEPROM.write(0, sleepCount+1);
   EEPROM.commit();
-  debugln("Going into deep sleep for 59 seconds");
-  ESP.deepSleep(59e6); // 59e6 is 59 seconds
+  debugln("Going into deep sleep for 58 seconds");
+  ESP.deepSleep(58e6); // 20e6 is 20 microseconds
 }
 
 // the loop function runs over and over again forever
@@ -113,5 +122,8 @@ void getDomoticzData(){
     }
     jsonBuffer.clear();
     http.end(); //Close connection
+
+    http.begin(dom_volt);
+    httpCode = http.GET();
   }
 }
